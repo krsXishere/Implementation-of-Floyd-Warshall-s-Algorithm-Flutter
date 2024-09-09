@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:implement_floy_warshall_algorithm/pages/graph_page.dart';
 import 'package:implement_floy_warshall_algorithm/providers/graph_provider.dart';
+import 'package:implement_floy_warshall_algorithm/providers/mst_provider.dart';
 import 'package:implement_floy_warshall_algorithm/services/graph_service.dart';
 import 'package:provider/provider.dart';
 
@@ -19,7 +20,10 @@ class MainApp extends StatelessWidget {
           create: (context) => GraphProvider(
             GraphService(6),
           ),
-        )
+        ),
+        ChangeNotifierProvider(
+          create: (context) => MSTProvider(),
+        ),
       ],
       child: Builder(builder: (context) {
         return const MaterialApp(

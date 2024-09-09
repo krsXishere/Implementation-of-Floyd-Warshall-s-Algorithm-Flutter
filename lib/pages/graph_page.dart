@@ -1,8 +1,7 @@
-// ignore_for_file: prefer_const_constructors
-
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:implement_floy_warshall_algorithm/providers/graph_provider.dart';
+import 'package:implement_floy_warshall_algorithm/providers/mst_provider.dart';
 import 'package:implement_floy_warshall_algorithm/services/graph_service.dart';
 import 'package:provider/provider.dart';
 
@@ -14,21 +13,23 @@ class GraphPage extends StatefulWidget {
 }
 
 class _GraphPageState extends State<GraphPage> {
-  final int numberOfVertices = 6; 
- // Ganti dengan jumlah simpul yang sesuai
+  final int numberOfVertices = 6;
   List<TextEditingController> controllers = [];
 
   @override
   void initState() {
     super.initState();
-    controllers = List.generate(numberOfVertices * numberOfVertices, (index) => TextEditingController());
+    controllers = List.generate(numberOfVertices * numberOfVertices,
+        (index) => TextEditingController());
   }
 
   List<List<int>> getMatrix() {
-    List<List<int>> matrix = List.generate(numberOfVertices, (_) => List.filled(numberOfVertices, GraphService.infinity));
+    List<List<int>> matrix = List.generate(numberOfVertices,
+        (_) => List.filled(numberOfVertices, GraphService.infinity));
     for (int i = 0; i < numberOfVertices; i++) {
       for (int j = 0; j < numberOfVertices; j++) {
-        int value = int.tryParse(controllers[i * numberOfVertices + j].text) ?? GraphService.infinity;
+        int value = int.tryParse(controllers[i * numberOfVertices + j].text) ??
+            GraphService.infinity;
         if (value == -1) {
           value = GraphService.infinity;
         }
@@ -40,52 +41,93 @@ class _GraphPageState extends State<GraphPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Graph Input'),
-      ),
-      body: Column(
-        children: [
-         Expanded(
-            child: GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: numberOfVertices),
-              itemCount: numberOfVertices * numberOfVertices,
-              itemBuilder: (context, index) {
-                return TextField(
-                  controller: controllers[index],
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: '0 atau -1', // Berikan petunjuk untuk nilai tak terbatas
+    double height = MediaQuery.of(context).size.height;
+
+    return Consumer2<GraphProvider, MSTProvider>(
+      builder: (context, graphProvider, mstProvider, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Input Graf Model'),
+          ),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: height * 0.5,
+                    child: GridView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: numberOfVertices),
+                      itemCount: numberOfVertices * numberOfVertices,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.all(3),
+                          child: TextField(
+                            controller: controllers[index],
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                              hintText: 'Isi',
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                );
-              },
+                  ElevatedButton(
+                    onPressed: () {
+                      List<List<int>> matrix = getMatrix();
+                      graphProvider.setMatrix(matrix);
+                      graphProvider.computeShortestPaths();
+                      graphProvider.computeShortestPathsPlus();
+                      graphProvider.primMST();
+                    },
+                    child: const Text('Hitung Jarak Terdekat'),
+                  ),
+                  SizedBox(
+                    height: height * 0.35,
+                    child: ListView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: graphProvider.distance.length,
+                      itemBuilder: (context, index) {
+                        return ListTile(
+                          title: Text(
+                            graphProvider.distance[index].toString(),
+                            textAlign: TextAlign.center,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const Text("Sisi Minimum Spanning Tree:"),
+                  SizedBox(
+                    height: height * 0.35,
+                    child: ListView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: graphProvider.msts.length,
+                      itemBuilder: (context, index) {
+                        return ListTile(
+                          title: Text(
+                            graphProvider.msts[index].toString(),
+                            textAlign: TextAlign.center,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Text("Total Bobot: ${graphProvider.totalWeight} meter"),
+                  SizedBox(
+                    height: height * 0.1,
+                  ),
+                ],
+              ),
             ),
           ),
-          ElevatedButton(
-            onPressed: () {
-              List<List<int>> matrix = getMatrix();
-              Provider.of<GraphProvider>(context, listen: false).setMatrix(matrix);
-              Provider.of<GraphProvider>(context, listen: false).computeShortestPaths();
-            },
-            child: const Text('Compute Shortest Paths'),
-          ),
-          Expanded(
-            child: Consumer<GraphProvider>(
-              builder: (context, graphProvider, child) {
-                return ListView.builder(
-                  itemCount: graphProvider.distance.length,
-                  itemBuilder: (context, index) {
-                    return ListTile(
-                      title: Text(graphProvider.distance[index].toString()),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
